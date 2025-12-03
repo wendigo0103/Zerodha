@@ -1,0 +1,52 @@
+import numpy as np
+
+# Number of states and actions
+n_states = env.observation_space.n
+n_actions = env.action_space.n
+
+# Initialize value function
+V = np.zeros(n_states)
+
+# Policy: choose each action uniformly
+policy = np.ones((n_states, n_actions)) / n_actions
+
+# Hyperparameters
+gamma = 0.99
+alpha = 0.1
+episodes = 5000
+
+def run_episode():
+    """Generate an episode following the policy: returns [(s,a,r), ...]."""
+    episode = []
+    state, _ = env.reset()
+
+    done = False
+    while not done:
+        action = np.random.choice(n_actions, p=policy[state])
+        next_state, reward, terminated, truncated, _ = env.step(action)
+        episode.append((state, action, reward))
+        state = next_state
+        done = terminated or truncated
+    return episode
+
+Returns = {s: [] for s in range(n_states)}
+
+for ep in range(episodes):
+    episode = run_episode()
+
+    # Compute returns from the episode
+    G = 0
+    visited = set()
+    for t in reversed(range(len(episode))):
+        s, a, r = episode[t]
+        G = r + gamma * G
+
+        # First-visit MC
+        if s not in visited:
+            visited.add(s)
+            Returns[s].append(G)
+            V[s] += alpha * (G - V[s])  # incremental mean update
+
+print("\nMonte Carlo Policy Evaluation DONE.")
+print("Estimated V(s):")
+print(V.reshape(4, 4))
